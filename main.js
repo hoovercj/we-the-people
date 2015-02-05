@@ -197,7 +197,7 @@ var tumblr = new Tumblr(
         consumerSecret: process.env.TUMBLR_CONSUMER_SECRET,
         accessToken: process.env.TUMBLR_ACCESS_TOKEN,
         accessSecret: process.env.TUMBLR_ACCESS_SECRET
-    }, 'whitehousepetitions.tumblr.com'
+    }, process.env.TUMBLR_BLOG_URL
 );
 
 function tumblrPost(postTitle, postDescription, postUrl) {

@@ -125,8 +125,9 @@ function postToTumblr(title, description, url) {
 var FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID;
 var FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET;
 var FACEBOOK_PAGE_ID = process.env.FACEBOOK_PAGE_ID;
+var FACEBOOK_REDIRECT_URL = process.env.FACEBOOK_REDIRECT_URL;
 var facebookGraphUrl = 'https://graph.facebook.com/';
-var facebookRedirectUrl = "http://localhost:5000/auth/facebook/callback";
+var facebookRedirectUrl = FACEBOOK_REDIRECT_URL + "auth/facebook/callback";
 
 // GET /auth/facebook
 //   Use passport.authenticate() as route middleware to authenticate the
