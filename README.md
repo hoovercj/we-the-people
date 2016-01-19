@@ -19,7 +19,7 @@ The variables in .env are only available locally. To make them available in Hero
 This will set VARIABLE_ONE to 1 and VARIABLE_TWO to 2
 
 ### Procfile
-This defines jobs that frontman can run.
+This defines jobs that foreman can run.
 
 ```
 accessTokens: node accessTokens.js
@@ -31,7 +31,7 @@ seedDB: node seedDB.js
 For example, to run `accessTokens.js` you can run the command:
 `$ nf accessTokens`
 
-*Remember:* To have access to the environment variables in a local environment, frontman must be used. Therefore the file must be in the `Procfile`
+*Remember:* To have access to the environment variables in a local environment, foreman must be used. Therefore the file must be in the `Procfile`
 
 ### accessTokens.js
 Creates a node server to generate access tokens for Facebook and Tumblr. This is not necessary for Twitter which kindly gives it to you in the developer panel.

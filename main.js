@@ -39,39 +39,48 @@ function getNewResponsesAndPost(outerCallback) {
         function (callback) {
             console.log('In getPetitionsFromAPI');
             request({uri: weThePeopleBaseUrl + respondedParam}, function (error, response, body) {
-                callback(error, body); 
-            });            
+                callback(error, body);
+            });
         }, // 2. Performs a batch of sadd commands to add all responded petitions.
         function (data, callback) {
             console.log('In addRespondedPetitionsToDB');
             var respondedPetitions = JSON.parse(data).results;
-        
+            var responses = parseResponses(respondedPetitions);
+
             // Create a multi command object
             var multi = client.multi();
             // for each responded petition, create sadd command
-            for (var i = 0; i < respondedPetitions.length; i++) {
-                multi.sadd(respondedPetitionsKey, respondedPetitions[i].id);
-            }
+            // add the id of the RESPONSE, not the petition itself,
+            // because each response can have multiple petitions
+            // and it isn't useful to post 5 times for each response
+            Object.keys(responses).forEach(function(responseId) {
+                multi.sadd(respondedPetitionsKey, responseId);
+            });
+            // for (var i = 0; i < responses.length; i++) {
+            //     multi.sadd(respondedPetitionsKey, responses[i].response.id);
+            // }
+
             // Execute the list of sadd operations
             multi.exec(function(err, replies) {
-                callback(err, replies, respondedPetitions);
+                callback(err, replies, responses);
             });
-        }, // 3. Checks return values from sadd operation and posts new responses. 
-        function (replies, respondedPetitions, callback) {
+        }, // 3. Checks return values from sadd operation and posts new responses.
+        function (replies, responses, callback) {
             console.log('In postRespondedPetitions');
             // For each response, a value of 1 means it is new
             // In that case, share on social media
+            var responseIds = Object.keys(responses);
             replies.forEach(function (reply, index) {
                 if ( reply == 1 /*1 means added -> new*/) {
-                    console.log('NEW Response: ' + respondedPetitions[index].id + ' - ' + respondedPetitions[index].title);
+                    var response = responses[responseIds[index]];
+                    console.log('NEW Response: ' + responseIds[index] + ' - ' + response.petitions.join[', ']);
                     // post to social media?
-                    var petition = respondedPetitions[index];
-                    facebookNewResponse(petition);
-                    tumblrNewResponse(petition);
-                    tweetReponse(petition);
+                    facebookNewResponse(response);
+                    tumblrNewResponse(response);
+                    tweetReponse(response);
                 }
             });
-            callback(null);            
+            callback(null);
         }], function (err) {
             outerCallback(err, 'PetitionResponseWaterfall');
         }
@@ -97,13 +106,13 @@ function getOpenPetitionsAndPost(outerCallback) {
         function (callback) {
             console.log('In getPetitionsFromAPI');
             request({uri: weThePeopleBaseUrl + openParam}, function (error, response, body) {
-                callback(error, body); 
-            });            
+                callback(error, body);
+            });
         }, // 2. Performs a batch of sismember commands to check if petitions have been added already.
         function (data, callback) {
             console.log('In checkOpenPetitionsInDB');
             var openPetitions = JSON.parse(data).results;
-        
+
             // Create a multi command object
             var multi = client.multi();
             // for each responded petition, create sadd command
@@ -114,7 +123,7 @@ function getOpenPetitionsAndPost(outerCallback) {
             multi.exec(function(err, replies) {
                 callback(err, replies, openPetitions);
             });
-        }, // 3. Checks return values from sismember operation and posts new responses. 
+        }, // 3. Checks return values from sismember operation and posts new responses.
         function (replies, openPetitions, callback) {
             console.log('In postOpenPetitions');
             // For each response, a value of 1 means it is new
@@ -129,7 +138,7 @@ function getOpenPetitionsAndPost(outerCallback) {
                     tweetOpenPetition(petition);
                 }
             });
-            callback(null, openPetitions);            
+            callback(null, openPetitions);
         }, // 4. The open petitions store is cleared and then populated with the new values.
         function(openPetitions, callback) {
             console.log('In setOpenPetitions');
@@ -147,6 +156,25 @@ function getOpenPetitionsAndPost(outerCallback) {
             outerCallback(err, 'OpenPetitionWaterfall');
         }
     );
+}
+
+// Parsing Helpers
+
+/**
+ * @param {object} respondedPetitions - Same format as the Whitehouse API
+ * https://petitions.whitehouse.gov/developers#petitions-retrieve
+ * @returns { id: { url: string, petitions: string[]} }
+ */
+function parseResponses(respondedPetitions) {
+    let responses = Object.create({});
+    respondedPetitions.forEach(function(petition) {
+        var responseId = petition.response.id;
+        if (!responses[responseId]) {
+            responses[responseId] = Object.create({url: petition.response.url, petitions: []});
+        }
+        responses[responseId].petitions.push('"' + petition.title + '"');
+    });
+    return responses;
 }
 
 
@@ -171,12 +199,12 @@ function tweet(prefix, title, url) {
         title = title.slice(0, maxTitleLength - 3 /* for elipses */) + '...';
     }
     var tweetText = prefix + title + ' ' + url + ' ' + twitterHashtags;
-    
+
     twitter.post('statuses/update', {status: tweetText},  function(error, tweet, response){
         if(error) {
             console.error(error);
         } else {
-            console.log('Tweeted: '+ JSON.stringify(tweet));  // Tweet body. 
+            console.log('Tweeted: '+ JSON.stringify(tweet));  // Tweet body.
         }
     });
 }
@@ -185,8 +213,11 @@ function tweetOpenPetition(openPetition) {
     tweet('New Petition: ', openPetition.title, openPetition.url);
 }
 
-function tweetReponse(respondedPetition) {
-    tweet('New Response: ', respondedPetition.title, respondedPetition.url);
+/**
+ * @param { id: { url: string, petitions: string[]} } response
+ */
+function tweetReponse(response) {
+    tweet('New Response: ', response.petitions[0], response.url);
 }
 
 // Tumblr Variables & Initialization
@@ -215,8 +246,19 @@ function tumblrOpenPetition(openPetition) {
     tumblrPost(openPetition.title, openPetition.body, openPetition.url);
 }
 
-function tumblrNewResponse(respondedPetition) {
-    tumblrPost('Whitehouse Response to: ' + respondedPetition.title, respondedPetition.body, respondedPetition.url);
+/**
+ * @param { id: { url: string, petitions: string[]} } response
+ */
+function tumblrNewResponse(response) {
+    var title = '';
+    var body = '';
+    if (response.petitions.length == 1) {
+        title = 'The whitehouse just issued a response to ' + response.petitions[0];
+    } else {
+        title = 'The whitehouse just issued a response to ' + response.petitions.length + ' petitions';
+        body = response.petitions.join("\n");
+    }
+    tumblrPost(title, body, response.url);
 }
 
 
@@ -235,8 +277,17 @@ function facebookOpenPetition(openPetition) {
     facebookPost(openPetition.title + '\n\n' + openPetition.body, openPetition.url);
 }
 
-function facebookNewResponse(respondedPetition) {
-    facebookPost('We did it! The whitehouse has issued a response to another petition: ' + respondedPetition.title, respondedPetition.url);
+/**
+ * @param { id: { url: string, petitions: string[]} } response
+ */
+function facebookNewResponse(response) {
+    var message = '';
+    if (response.petitions.length == 1) {
+        message = 'We did it! The whitehouse has issued a response to ' + response.petitions[0];
+    } else {
+        message = 'We did it! The whitehouse has issued a response to ' + response.petitions.length + ' petitions:' + "\n" + response.petitions.join("\n");
+    }
+    facebookPost(message, response.url);
 }
 
 // Main Method
