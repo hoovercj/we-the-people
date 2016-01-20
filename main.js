@@ -168,7 +168,7 @@ function parseResponses(respondedPetitions) {
 }
 
 function sanitizeText(text) {
-    return text.replace('&amp', '&');
+    return text.replace('&amp;', '&');
 }
 
 // Twitter Variables & Initialization
@@ -182,13 +182,12 @@ var twitter = new Twitter(
 );
 var twitterHashtags = '#WeThePeople'
 
-var TWITTER_URL_LENGTH = 23;
 function tweet(prefix, title, url) {
     // This snippet trims the title to be appropriate for tweet.
     // The overhead for a tweet is the the prefix (e.g. "NEW RESPONSE: "), URL, the hashtags, and the space between the text, url, and hashtags.
     // This takes that into account and trims the title if necessary to keep tweets under 140 characters.
     title = sanitizeText(title);
-    var maxTitleLength = 140 - (Math.min(TWITTER_URL_LENGTH, url.length) + prefix.length + twitterHashtags.length + 2 /* num spaces */);
+    var maxTitleLength = 140 - (Math.min(process.env.TWITTER_URL_LENGTH || 25, url.length) + prefix.length + twitterHashtags.length + 2 /* num spaces */);
     if (maxTitleLength < title.length) {
         title = title.slice(0, maxTitleLength - 3 /* for elipses */) + '...';
     }
