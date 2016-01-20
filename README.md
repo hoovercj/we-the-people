@@ -29,9 +29,9 @@ seedDB: node seedDB.js
 ```
 
 For example, to run `accessTokens.js` you can run the command:
-`$ nf accessTokens`
+`$ nf start accessTokens`
 
-*Remember:* To have access to the environment variables in a local environment, foreman must be used. Therefore the file must be in the `Procfile`
+*Remember:* To have access to the environment variables in a local environment, foreman must be used. Therefore the script must be listed in the `Procfile`
 
 ### accessTokens.js
 Creates a node server to generate access tokens for Facebook and Tumblr. This is not necessary for Twitter which kindly gives it to you in the developer panel.
@@ -44,21 +44,21 @@ You will need some Environment Variables which can be obtained by creating an ap
 
 It also uses some more general ones:
 * `URL` - The URL this is being run from (e.g http://localhost, http://app-name.herokuapp.com)
-* 'PORT'  - The port it is being run on. Defaults to 5000 if nothing is provided
+* `PORT`  - The port it is being run on. Defaults to 5000 if nothing is provided
 
 ##### Facebook
 Facebook also requires special environment variables that are extracted from the [developer console](https://developers.facebook.com/apps/) or the 'About Tab' for the page you want to post to. 
 
 *Note:* The FACEBOOK_REDIRECT_URL must be the same as the one listed in the app settings.
 
-* FACEBOOK_APP_ID
-* FACEBOOK_APP_SECRET
-* FACEBOOK_PAGE_ID
-* FACEBOOK_REDIRECT_URL
+* `FACEBOOK_APP_ID`
+* `FACEBOOK_APP_SECRET`
+* `FACEBOOK_PAGE_ID`
+* `FACEBOOK_REDIRECT_URL`
 
 #### Getting Access Tokens
 Once you've configured it, you can run it using:
-`$ nf accessTokens`
+`$ nf start accessTokens`
 
 There are two endpoints available, `/auth/tumblr` and `/auth/facebook`. 
 Assuming you are running it from `localhost:5050` you can open a browser and go to `http://localhost:5050/auth/tumblr`, authorize the application, and view the relevant secrets. Add these to your .env file.
@@ -86,11 +86,11 @@ The two main tasks are tied together in a `async.parallel` block. Parallel block
 * `PETITION_LIMIT` - the amount of petitions to grab from any request. The request returns 10 by default, setting a limit allows you to get more than that. At the moment there are ~250 responses and ~70 open petitions at any given time.
 
 #### Running the Script
-To run it locally, run `$ nf main`. Otherwise, to run directly from heroku, you can issue the command `heroku run node main.js'
+To run it locally, run `$ nf start main`. Otherwise, to run directly from heroku, you can issue the command `heroku run node main.js'
 
-To avoid posting hundreds of things on the first run you can first run `$ nf seedDB` which will grab all open and responded petitions and put them into the db so that future runs of `main.js` will only post the newest ones.
+To avoid posting hundreds of things on the first run you can first run `$ nf start seedDB` which will grab all open and responded petitions and put them into the db so that future runs of `main.js` will only post the newest ones.
 
-To clear the db, run `$ nf clearDB`
+To clear the db, run `$ nf start clearDB`
 
 To schedule this job to be run at intervals of `every 10 minutes`, `every hour`, `daily`, add the `scheduler` add-on to your heroku app, select the interval, and set the task to `node main.js`.
 
